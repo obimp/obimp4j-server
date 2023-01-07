@@ -1,5 +1,6 @@
 package io.github.obimp.connection
 
+import io.github.obimp.connection.input.OBIMPInputDataParser
 import java.nio.ByteBuffer
 import java.nio.channels.SocketChannel
 
@@ -14,8 +15,7 @@ internal class PlainOBIMPClientConnection(channel: SocketChannel) : AbstractOBIM
                     val buffer = ByteBuffer.allocate(32)
                     while (channel.read(buffer) > 0) {
                         buffer.flip()
-                        //OBIMPInputDataParser.parseInputData(connection, buffer)
-                        println(String(buffer.array()))
+                        OBIMPInputDataParser.parseInputData(this, buffer)
                         buffer.clear()
                     }
                 } else if (selectionKey.isWritable) {
