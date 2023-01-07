@@ -5,7 +5,6 @@ import io.github.obimp.data.structure.WTLD
 import io.github.obimp.data.type.LongWord
 import io.github.obimp.packet.OBIMPPacket
 import io.github.obimp.packet.handle.OBIMPPacketHandler
-import io.github.obimp.packet.header.Header
 import io.github.obimp.packet.header.OBIMPHeader
 import java.nio.ByteBuffer
 
@@ -14,7 +13,7 @@ import java.nio.ByteBuffer
  */
 internal object OBIMPInputDataParser : InputDataParser {
     private val packetHandler = OBIMPPacketHandler()
-    private val inputBuffer = mutableMapOf<OBIMPClientConnection, Pair<ByteBuffer, Header?>>()
+    private val inputBuffer = mutableMapOf<OBIMPClientConnection, Pair<ByteBuffer, OBIMPHeader?>>()
 
     override fun parseInputData(connection: OBIMPClientConnection, buffer: ByteBuffer) {
         buffer.rewind()
@@ -82,7 +81,7 @@ internal object OBIMPInputDataParser : InputDataParser {
         }
     }
 
-    private fun parseHeader(buffer: ByteBuffer): Header {
+    private fun parseHeader(buffer: ByteBuffer): OBIMPHeader {
         buffer.get() // Skipping check byte (0x23 - "#")
         val sequence = buffer.int
         val type = buffer.short
@@ -92,9 +91,8 @@ internal object OBIMPInputDataParser : InputDataParser {
         return OBIMPHeader(sequence, type, subtype, requestID, contentLength)
     }
 
-    private fun parseBody(connection: OBIMPClientConnection, header: Header, buffer: ByteBuffer) {
-        val packet = OBIMPPacket(header.type, header.subtype)
-        packet.header = header
+    private fun parseBody(connection: OBIMPClientConnection, header: OBIMPHeader, buffer: ByteBuffer) {
+        val packet = OBIMPPacket(header)
         if (header.contentLength > 0) {
             while (buffer.hasRemaining()) {
                 val type = buffer.int
@@ -105,7 +103,7 @@ internal object OBIMPInputDataParser : InputDataParser {
                     buffer[data]
                     wtld.buffer = ByteBuffer.wrap(data)
                 }
-                packet.body.content.add(wtld)
+                packet.addItem(wtld)
             }
         }
         packetHandler.handlePacket(connection, packet)
